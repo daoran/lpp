@@ -88,5 +88,6 @@ jobs:
           rosrun lpp test_default
           rosrun lpp test_roslog
           rosrun lpp test_sysd
+          rosrun lpp test_sysd_release
         working-directory: catkin_ws
         shell: bash
