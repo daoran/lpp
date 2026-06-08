@@ -45,6 +45,7 @@ if(catkin_FOUND)
                 INCLUDE_DIRS include
                 LIBRARIES lpp
                 CATKIN_DEPENDS roscpp
+                CFG_EXTRAS lpp-targets.cmake
         )
 endif()
 add_library(lpp ${CMAKE_CURRENT_SOURCE_DIR}/include/log++.h)
