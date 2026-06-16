@@ -1,0 +1,140 @@
+name: Version check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check-version-bump:
+    name: Check version bump (${{ matrix.package }})
+    runs-on: [self-hosted, linux, x64]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: lpp
+            pyproject_path: pyproject.toml
+            path_regex: ""
+
+    container:
+      image: omavteam/ubuntu-omav:22.04
+      credentials:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Mark repo safe for git
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Resolve base branch
+        id: base
+        run: |
+          BASE_REF="${{ github.base_ref }}"
+          if [ -z "$BASE_REF" ]; then
+            BASE_REF="${{ github.event.repository.default_branch }}"
+          fi
+
+          echo "Using base branch: $BASE_REF"
+          echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch base branch
+        run: |
+          git fetch origin "${{ steps.base.outputs.base_ref }}"
+
+      - name: Detect changed files
+        id: changed
+        run: |
+          PATH_REGEX="${{ matrix.path_regex }}"
+          if [ -z "$PATH_REGEX" ]; then
+            echo "No path regex provided for ${{ matrix.package }}; treating all files as relevant."
+            echo "relevant_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHANGED=$(git diff --name-only origin/${{ steps.base.outputs.base_ref }}...HEAD)
+          echo "$CHANGED"
+
+          if echo "$CHANGED" | grep -Eq "$PATH_REGEX"; then
+            echo "relevant_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "relevant_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip if irrelevant
+        if: steps.changed.outputs.relevant_changed == 'false'
+        run: |
+          echo "No changes in ${{ matrix.package }}, skipping."
+          exit 0
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install packaging
+
+      - name: Ensure tomllib / tomli available
+        run: |
+          python3 - <<'EOF'
+          import sys
+          import subprocess
+
+          if sys.version_info < (3, 11):
+              try:
+                  import tomli
+              except ImportError:
+                  subprocess.check_call([sys.executable, "-m", "pip", "install", "tomli"])
+          EOF
+
+      - name: Compare TOML Versions
+        run: |
+          python3 - <<'EOF'
+          try:
+              import tomllib
+          except ImportError:
+              import tomli as tomllib
+
+          import subprocess
+          import sys
+          from packaging.version import Version
+
+          package = "${{ matrix.package }}"
+          pyproject_path = "${{ matrix.pyproject_path }}" or f"{package}/pyproject.toml"
+          base_ref = "${{ steps.base.outputs.base_ref }}"
+
+          try:
+              with open(pyproject_path, "rb") as f:
+                  pr_version = tomllib.load(f)["project"]["version"]
+          except FileNotFoundError:
+              print(f"{package}: pyproject.toml not found, skipping.")
+              sys.exit(0)
+
+          try:
+              base_content = subprocess.check_output(
+                  ["git", "show", f"origin/{base_ref}:{pyproject_path}"]
+              )
+              base_version = tomllib.loads(base_content.decode())["project"]["version"]
+          except subprocess.CalledProcessError:
+              print(
+                  f"{package}: missing {pyproject_path} in origin/{base_ref}; "
+                  "version check cannot proceed."
+              )
+              sys.exit(1)
+
+          if Version(pr_version) <= Version(base_version):
+              print(
+                  f"{package}: version bump required ({pr_version} <= {base_version})"
+              )
+              sys.exit(1)
+
+          print(
+              f"{package}: version check passed ({pr_version} > {base_version})"
+          )
+          EOF
