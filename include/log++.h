@@ -166,6 +166,7 @@ class JournalSender {
   JournalSender &operator=(JournalSender &&) = delete;
 
   void send(BaseSeverity severity, const std::string &message, const std::string &identifier) const {
+    // Already handled by makeSocket() in the constructor
     if (fd_ < 0) {
       return;
     }
