@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "lpp"
-version = "1.0.0"
+version = "1.0.1"
 description = "Log++ logging framework header-only library"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -20,9 +20,6 @@ classifiers = [
   "Programming Language :: C++",
   "Topic :: Software Development :: Libraries",
 ]
-
-[project.entry-points."cmake.prefix"]
-lpp = "lpp.cmake"
 
 [project.urls]
 Homepage = "https://github.com/ethz-asl/lpp"
