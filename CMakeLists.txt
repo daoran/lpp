@@ -45,6 +45,7 @@ if(catkin_FOUND)
                 INCLUDE_DIRS include
                 LIBRARIES lpp
                 CATKIN_DEPENDS roscpp
+                CFG_EXTRAS lpp-targets.cmake
         )
 endif()
 add_library(lpp ${CMAKE_CURRENT_SOURCE_DIR}/include/log++.h)
@@ -212,6 +213,16 @@ if (GLOG_FOUND AND catkin_FOUND AND LPP_BUILD_TESTS)
         target_link_libraries(${SYSD_TESTS} glog gtest ${catkin_LIBRARIES} gcov)
         target_compile_definitions(${SYSD_TESTS} PRIVATE MODE_SYSD)
         target_compile_options(${SYSD_TESTS} PRIVATE ${LPP_TEST_CXX_FLAGS})
+
+        ##### Systemd Release Tests #####
+        set(SYSD_RELEASE_TESTS "test_sysd_release")
+        add_executable(${SYSD_RELEASE_TESTS} test/test_entry_point.cpp
+                test/sysd/test_sysd_release.cc)
+
+        target_include_directories(${SYSD_RELEASE_TESTS} PRIVATE ${LPP_INCLUDE_DIRECTORIES} test/sysd)
+        target_link_libraries(${SYSD_RELEASE_TESTS} glog gtest ${catkin_LIBRARIES} gcov)
+        target_compile_definitions(${SYSD_RELEASE_TESTS} PRIVATE MODE_SYSD NDEBUG)
+        target_compile_options(${SYSD_RELEASE_TESTS} PRIVATE ${LPP_TEST_CXX_FLAGS})
 
         ##### Nolog Tests #####
         set(NOLOG_TESTS "test_nolog")

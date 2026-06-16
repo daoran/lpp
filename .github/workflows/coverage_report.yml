@@ -47,11 +47,11 @@ jobs:
           ./test_nolog
           ./test_roslog
           ./test_sysd
+          ./test_sysd_release
         working-directory: catkin_ws/src/lpp/build/devel/lib/lpp
         shell: bash
 
       - name: Print coverage
         run: gcovr
         working-directory: catkin_ws/src/lpp
-
 

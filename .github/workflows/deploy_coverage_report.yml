@@ -42,7 +42,7 @@ jobs:
         shell: bash
 
       - name: Run unittests
-        run: source /opt/ros/${{ matrix.rosdistro }}/setup.bash && ./test_default && ./test_glog && ./test_lpp && ./test_lpp_custom && ./test_nolog && ./test_roslog
+        run: source /opt/ros/${{ matrix.rosdistro }}/setup.bash && ./test_default && ./test_glog && ./test_lpp && ./test_lpp_custom && ./test_nolog && ./test_roslog && ./test_sysd && ./test_sysd_release
         working-directory: catkin_ws/src/lpp/build/devel/lib/lpp
         shell: bash
 
@@ -58,6 +58,5 @@ jobs:
       - name: Deploy to Github pages
         uses: actions/deploy-pages@v5
         id: deployment
-
 
 

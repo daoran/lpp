@@ -859,7 +859,20 @@ inline BaseSeverity toBase(GlogSeverity glog_severity) {
 }
 
 #ifdef MODE_SYSD
+inline bool shouldSendToJournal([[maybe_unused]] BaseSeverity severity) {
+#ifndef LPP_DEBUG
+  if (severity == BaseSeverity::DEBUG) {
+    return false;
+  }
+#endif
+  return true;
+}
+
 inline void journalSend(BaseSeverity severity, const std::string &message) {
+  if (!shouldSendToJournal(severity)) {
+    return;
+  }
+
   if (lppInit.sysd_sender != nullptr) {
     lppInit.sysd_sender(severity, message, lppInit.sysd_identifier);
     return;
