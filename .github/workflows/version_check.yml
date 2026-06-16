@@ -1,0 +1,13 @@
+name: Version check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check-version-bump:
+    uses: ethz-asl/omav_ci/.github/workflows/python_package_version_check.yml@main
+    secrets: inherit
+    with:
+      packages: |
+        [{"package":"lpp","pyproject_path":"pyproject.toml","path_regex":""}]
