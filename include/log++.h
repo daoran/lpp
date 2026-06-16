@@ -166,6 +166,7 @@ class JournalSender {
   JournalSender &operator=(JournalSender &&) = delete;
 
   void send(BaseSeverity severity, const std::string &message, const std::string &identifier) const {
+    // Already handled by makeSocket() in the constructor
     if (fd_ < 0) {
       return;
     }
@@ -210,24 +211,25 @@ class JournalSender {
       return;
     }
 
+    // A zero value means /proc/sys/net/core/wmem_max was unavailable or invalid, so keep the socket default.
     if (send_buffer_size_ > 0) {
       (void) setsockopt(fd_, SOL_SOCKET, SO_SNDBUF, &send_buffer_size_, sizeof(send_buffer_size_));
     }
   }
 
-  static std::size_t fieldOverhead(const std::string &field, const std::string &value) {
+  static std::size_t journalFieldSize(const std::string &field, const std::string &value) {
     constexpr std::size_t kFieldSeparatorSize = 1U; // '=' for single-line fields, '\n' before binary field data.
     constexpr std::size_t kFieldTerminatorSize = 1U; // Trailing '\n' after every journal field.
     const std::size_t value_size_prefix = value.find('\n') == std::string::npos ? 0U : sizeof(std::uint64_t);
-    return field.size() + kFieldSeparatorSize + value_size_prefix + kFieldTerminatorSize;
+    return field.size() + kFieldSeparatorSize + value_size_prefix + value.size() + kFieldTerminatorSize;
   }
 
   static std::size_t estimatedPayloadSize(const std::string &message, const std::string &identifier) {
     const std::string priority = std::to_string(LOG_CRIT);
-    std::size_t size = message.size() + fieldOverhead("MESSAGE", message);
-    size += priority.size() + fieldOverhead("PRIORITY", priority);
+    std::size_t size = journalFieldSize("MESSAGE", message);
+    size += journalFieldSize("PRIORITY", priority);
     if (!identifier.empty()) {
-      size += identifier.size() + fieldOverhead("SYSLOG_IDENTIFIER", identifier);
+      size += journalFieldSize("SYSLOG_IDENTIFIER", identifier);
     }
     return size;
   }
