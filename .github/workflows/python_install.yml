@@ -25,7 +25,7 @@ jobs:
     name: Ubuntu ${{ matrix.ubuntu }} | Python ${{ matrix.python-version }} | pip install
     steps:
       - name: Checkout lpp
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Add uv to PATH
         run: echo "/root/.local/bin" >> "$GITHUB_PATH"
